@@ -9,16 +9,16 @@ class FoodSerializer(serializers.HyperlinkedModelSerializer):
     """
     class Meta:
         model = Food
-        fields = ["name", "description", "url"]
+        fields = ["id", "name", "description", "url"]
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ["name", "calories"]
+        fields = ["id", "name", "calories"]
 
 
 class IngredientWeightSerializer(serializers.ModelSerializer):
     class Meta:
         model = IngredientWeight
-        fields = ["food", "ingredient", "weight"]
+        fields = ["id", "food", "ingredient", "weight"]
