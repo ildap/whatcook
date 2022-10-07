@@ -5,10 +5,16 @@ class Ingredient(models.Model):
     name = models.CharField(max_length=50, unique=True)
     calories = models.FloatField()
 
+    def __str__(self):
+        return self.name
+
 
 class Food(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 class IngredientWeight(models.Model):
