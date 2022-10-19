@@ -3,9 +3,10 @@ from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
-from home.views import FoodViewSet
-from home.models import Food
 from abc import ABCMeta, abstractmethod
+
+from home.views import FoodViewSet
+from home.models import Food, Ingredient, FoodRecommendation
 
 
 class ModelViewSetTestMixin:
@@ -47,7 +48,7 @@ class ModelViewSetTestMixin:
 
     @abstractmethod
     def get_valid_data(self) -> dict:
-       pass
+        pass
 
     @abstractmethod
     def is_correct_serialize(self, model_object, serialize_data) -> bool:
@@ -160,3 +161,61 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
 
         self.assertEqual(response.data["name"][0].code, "unique")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class FoodRecommendationManagerTest(TestCase):
+    fixtures = ["data.json"]
+
+    def assertContainIngredients(self, available_ingredients, need_ingredients):
+        contain_ingredient = False
+        for ingredient in need_ingredients:
+            if ingredient in available_ingredients:
+                contain_ingredient = True
+                break
+
+        self.assertTrue(contain_ingredient, msg="FoodRecommendation doesn't have the required ingredients")
+
+    def test_filter_by_ingredients(self):
+        ingredients = Ingredient.objects.filter(name__in=['pasta', 'eggs'])
+        food_recommendations = FoodRecommendation.objects.filter_by_ingredients(ingredients)
+        max_count = ingredients.count()
+        prev_count = max_count
+
+        for food_recommendation in food_recommendations:
+            available_ingredients = [iw.ingredient for iw in food_recommendation.ingredientweight_set.all()]
+
+            self.assertContainIngredients(available_ingredients, ingredients)
+            # test order by ingredients_count
+            self.assertLessEqual(food_recommendation.ingredients_count, prev_count)
+
+            if food_recommendation.ingredients_total > food_recommendation.ingredients_count:
+                self.assertIsNotNone(food_recommendation.absent)
+
+            prev_count = food_recommendation.ingredients_count
+
+    def test_filter_by_ingredients_no_ingredients(self):
+        food_recommendations = FoodRecommendation.objects.filter_by_ingredients([])
+
+        self.assertEqual(food_recommendations.count(), 0)
+
+
+class FoodRecommendationTest(TestCase):
+    fixtures = ["data.json"]
+
+    def setUp(self):
+        self.food_recommendation = FoodRecommendation.objects.get(name="omelet")
+        self.absent_pk = self.food_recommendation.ingredientweight_set.all()[0].ingredient.pk
+        self.food_recommendation.absent = str(self.absent_pk)
+
+    def test_has_ingredients(self):
+        has_ingredients = self.food_recommendation.has_ingredients
+        ingredients = [iw.ingredient for iw in self.food_recommendation.ingredientweight_set.all()[0:]]
+
+        self.assertEqual(set(has_ingredients), set(ingredients))
+
+    def test_absent_ingredients(self):
+        absent_ingredients = self.food_recommendation.absent_ingredients
+
+        self.assertEqual(len(absent_ingredients), 1)
+        self.assertEqual(absent_ingredients[0].pk, self.absent_pk)
+
