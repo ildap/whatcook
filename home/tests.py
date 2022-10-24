@@ -5,21 +5,21 @@ from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from abc import ABCMeta, abstractmethod
 
-from home.views import FoodViewSet
+from home.views import FoodViewSet, FoodRecommendationListView
 from home.models import Food, Ingredient, FoodRecommendation
 
 
 class ModelViewSetTestMixin:
     """
-        Mixin class for testing "crud" methods from ModelViewSet subclasses
+    Mixin class for testing 'crud' methods from ModelViewSet subclasses
     """
     __metaclass__ = ABCMeta
 
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.detail_view = self.get_viewset_class().as_view({"get": "retrieve"})
-        self.view = self.get_viewset_class().as_view({"get": "list", "post": "create",
-                                                      "put": "update", "delete": "destroy"})
+        self.detail_view = self.get_viewset_class().as_view({'get': 'retrieve'})
+        self.view = self.get_viewset_class().as_view({'get': 'list', 'post': 'create',
+                                                      'put': 'update', 'delete': 'destroy'})
 
     @abstractmethod
     def get_queryset(self) -> QuerySet:
@@ -40,8 +40,8 @@ class ModelViewSetTestMixin:
 
             return [
                 {
-                    "no valid data": {"field name1": "value", "field name2": ""},
-                    "error codes":   {"field name2": "blank"}
+                    'no valid data': {'field name1': 'value', 'field name2': ''},
+                    'error codes':   {'field name2': 'blank'}
                 },
             ]
         """
@@ -55,18 +55,18 @@ class ModelViewSetTestMixin:
         pass
 
     def test_list(self):
-        request = self.factory.get(self.get_url(), format="json")
+        request = self.factory.get(self.get_url(), format='json')
         response = self.view(request)
         model_count = self.get_queryset().count()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], model_count)
+        self.assertEqual(response.data['count'], model_count)
 
     def test_create_no_valid(self):
         for testcase in self.validation_testcases():
-            data = testcase["no valid data"]
-            error_codes = testcase["error codes"]
-            request = self.factory.post(self.get_url(), data=data, format="json")
+            data = testcase['no valid data']
+            error_codes = testcase['error codes']
+            request = self.factory.post(self.get_url(), data=data, format='json')
             response = self.view(request)
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -79,19 +79,19 @@ class ModelViewSetTestMixin:
     def test_create_valid(self):
         request = self.factory.post(self.get_url(),
                                     data=self.get_valid_data(),
-                                    format="json")
+                                    format='json')
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         try:
-            self.get_queryset().get(id=response.data["id"])
+            self.get_queryset().get(pk=response.data['pk'])
         except ObjectDoesNotExist:
             self.fail("object not created")
 
     def test_retrieve(self):
         obj = self.get_queryset().first()
-        request = self.factory.get(self.get_url() + str(obj.pk), format="json")
+        request = self.factory.get(self.get_url() + str(obj.pk), format='json')
         response = self.detail_view(request, pk=obj.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -103,7 +103,7 @@ class ModelViewSetTestMixin:
         obj = self.get_queryset().first()
         request = self.factory.put(self.get_url() + str(obj.pk),
                                    data=self.get_valid_data(),
-                                   format="json")
+                                   format='json')
         response = self.view(request, pk=obj.pk)
         updated_obj = self.get_queryset().first()
         # for comparing without pk
@@ -114,7 +114,7 @@ class ModelViewSetTestMixin:
 
     def test_delete(self):
         obj = self.get_queryset().first()
-        request = self.factory.delete(self.get_url() + str(obj.pk), format="json")
+        request = self.factory.delete(self.get_url() + str(obj.pk), format='json')
         response = self.view(request, pk=obj.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -123,7 +123,7 @@ class ModelViewSetTestMixin:
 
 
 class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
-    fixtures = ["data.json"]
+    fixtures = ['data.json']
 
     # Implemented abstract methods
     def get_viewset_class(self) -> ModelViewSet.__class__:
@@ -136,35 +136,57 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
         return Food.objects.get_queryset()
 
     def validation_testcases(self):
-        long_string = "L" * 256
-        blank_string = ""
+        long_string = 'L' * 256
+        blank_string = ''
         return [
             {
-                "no valid data": {"name": blank_string, "description": long_string},
-                "error codes": {"name": "blank", "description": "max_length"}
+                'no valid data': {'name': blank_string, 'description': long_string},
+                'error codes': {'name': 'blank', 'description': 'max_length'}
             }
         ]
 
     def get_valid_data(self) -> dict:
-        return {"name": "pizza"}
+        return {'name': 'pizza'}
 
     def is_correct_serialize(self, model_object, serialize_data) -> bool:
-        return model_object.id == serialize_data.get("id") and \
-               model_object.name == serialize_data.get("name") and \
-               model_object.description == serialize_data.get("description")
+        return model_object.pk == serialize_data.get('pk') and \
+               model_object.name == serialize_data.get('name') and \
+               model_object.description == serialize_data.get('description')
 
     # Test cases
     def test_create_unique(self):
         request = self.factory.post(self.get_url(),
-                                    data={"name": "carbonara"}, format="json")
+                                    data={'name': 'carbonara'}, format='json')
         response = self.view(request)
 
-        self.assertEqual(response.data["name"][0].code, "unique")
+        self.assertEqual(response.data['name'][0].code, 'unique')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class FoodRecommendationListViewTest(TestCase):
+    fixtures = ['data.json']
+
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.view = FoodRecommendationListView.as_view()
+        self.url = "/foods/recommendation"
+
+    def test_list(self):
+        ingredients = Ingredient.objects.filter(name__in=['pasta', 'eggs'])
+        ingredients_pk = ','.join([str(i.pk) for i in Ingredient.objects.filter(name__in=['pasta', 'eggs'])])
+        request = self.factory.get(self.url + '/' + ingredients_pk, format='json')
+        response = self.view(request, ingredients=ingredients_pk)
+        model_count = FoodRecommendation.objects.filter_by_ingredients(ingredients).count()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], model_count)
+
+        request = self.client.get(self.url + "/no valid", format='json')
+        self.assertEqual(request.status_code, status.HTTP_404_NOT_FOUND)
+
+
 class FoodRecommendationManagerTest(TestCase):
-    fixtures = ["data.json"]
+    fixtures = ['data.json']
 
     def assertContainIngredients(self, available_ingredients, need_ingredients):
         contain_ingredient = False
@@ -200,10 +222,10 @@ class FoodRecommendationManagerTest(TestCase):
 
 
 class FoodRecommendationTest(TestCase):
-    fixtures = ["data.json"]
+    fixtures = ['data.json']
 
     def setUp(self):
-        self.food_recommendation = FoodRecommendation.objects.get(name="omelet")
+        self.food_recommendation = FoodRecommendation.objects.get(name='omelet')
         self.absent_pk = self.food_recommendation.ingredientweight_set.all()[0].ingredient.pk
         self.food_recommendation.absent = str(self.absent_pk)
 
