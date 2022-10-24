@@ -28,17 +28,17 @@ class FoodRecommendationManager(models.Manager):
 
     def filter_by_ingredients(self, ingredients: [Ingredient]):
         ingredient_in = Q(ingredientweight__ingredient__in=ingredients)
-        ingredients_count = Count("ingredientweight", filter=ingredient_in)
+        ingredients_count = Count('ingredientweight', filter=ingredient_in)
 
-        absent_ids = models.Aggregate(F("ingredientweight__ingredient_id"),
-                                      function="GROUP_CONCAT", filter=~ingredient_in)
+        absent_ids = models.Aggregate(F('ingredientweight__ingredient_id'),
+                                      function='GROUP_CONCAT', filter=~ingredient_in)
 
         return (self.get_queryset()
                 .annotate(ingredients_count=ingredients_count)
-                .annotate(ingredients_total=Count("ingredientweight"))
+                .annotate(ingredients_total=Count('ingredientweight'))
                 .annotate(absent=absent_ids)
                 .filter(ingredients_count__gt=0)
-                .order_by("-ingredients_count", "ingredients_total"))
+                .order_by('-ingredients_count', 'ingredients_total'))
 
 
 class FoodRecommendation(Food):
