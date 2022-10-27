@@ -1,6 +1,13 @@
-from rest_framework.routers import DefaultRouter
-from home.views import FoodViewSet, IngredientViewSet, IngredientWeightViewSet, FoodRecommendationListView
 from django.urls import include, path, re_path
+
+from rest_framework.routers import DefaultRouter
+
+from home.views import (
+    FoodViewSet,
+    IngredientViewSet,
+    IngredientWeightViewSet,
+    FoodRecommendationListView
+)
 
 router = DefaultRouter()
 router.register(r'foods', FoodViewSet)

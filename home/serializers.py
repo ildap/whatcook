@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from home.models import Food, Ingredient, IngredientWeight, FoodRecommendation
+
+from home.models import (
+    Food,
+    Ingredient,
+    IngredientWeight,
+    FoodRecommendation
+)
 
 
 class FoodSerializer(serializers.ModelSerializer):

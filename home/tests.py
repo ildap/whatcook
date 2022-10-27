@@ -1,9 +1,11 @@
+from abc import ABCMeta, abstractmethod
+
 from django.db.models import QuerySet, ObjectDoesNotExist
 from django.test import TestCase
+
 from rest_framework.test import APIRequestFactory
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
-from abc import ABCMeta, abstractmethod
 
 from home.views import FoodViewSet, FoodRecommendationListView
 from home.models import Food, Ingredient, FoodRecommendation
@@ -36,14 +38,14 @@ class ModelViewSetTestMixin:
     @abstractmethod
     def validation_testcases(self) -> list:
         """
-            Return list of test cases with no valid data and relevant error.
+        Return list of test cases with no valid data and relevant error.
 
-            return [
-                {
-                    'no valid data': {'field name1': 'value', 'field name2': ''},
-                    'error codes':   {'field name2': 'blank'}
-                },
-            ]
+        return [
+            {
+                'no valid data': {'field name1': 'value', 'field name2': ''},
+                'error codes':   {'field name2': 'blank'}
+            },
+        ]
         """
 
     @abstractmethod

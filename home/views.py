@@ -1,9 +1,18 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.generics import ListAPIView
 
-from home.models import Food, Ingredient, IngredientWeight, FoodRecommendation
-from home.serializers import (FoodSerializer, IngredientSerializer,
-                              IngredientWeightSerializer, FoodRecommendationSerializer)
+from home.models import (
+    Food,
+    Ingredient,
+    IngredientWeight,
+    FoodRecommendation
+)
+from home.serializers import (
+    FoodSerializer,
+    IngredientSerializer,
+    IngredientWeightSerializer,
+    FoodRecommendationSerializer
+)
 
 
 class FoodViewSet(ModelViewSet):
