@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+from django.contrib.auth.models import User
 from django.db.models import QuerySet, ObjectDoesNotExist
 from django.test import TestCase
 
@@ -126,6 +127,9 @@ class ModelViewSetTestMixin:
 
 class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
     fixtures = ['data.json']
+
+    user = User.objects.get(username='GoodUser') # aOwnf2gjOwP9n
+    anonymous = User.objects.get(username='AnonymousUser')
 
     # Implemented abstract methods
     def get_viewset_class(self) -> ModelViewSet.__class__:

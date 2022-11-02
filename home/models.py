@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import Q, Count, F
+from django.contrib.auth.models import User
 
 
 class Ingredient(models.Model):

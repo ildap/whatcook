@@ -18,5 +18,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path(r'', include('home.urls', namespace='home')),
-    path('admin/', admin.site.urls)
+    path('admin/', admin.site.urls),
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    #url(r'^docs/', include_docs_urls(title='My API title', public=False))
 ]
