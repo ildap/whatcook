@@ -126,7 +126,7 @@ class ModelViewSetTestMixin:
 
 
 class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
-    fixtures = ['data.json']
+    fixtures = ['_data.json']
 
     user = User.objects.get(username='GoodUser') # aOwnf2gjOwP9n
     anonymous = User.objects.get(username='AnonymousUser')
@@ -170,7 +170,7 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
 
 
 class FoodRecommendationListViewTest(TestCase):
-    fixtures = ['data.json']
+    fixtures = ['_data.json']
 
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -192,7 +192,7 @@ class FoodRecommendationListViewTest(TestCase):
 
 
 class FoodRecommendationManagerTest(TestCase):
-    fixtures = ['data.json']
+    fixtures = ['_data.json']
 
     def assertContainIngredients(self, available_ingredients, need_ingredients):
         contain_ingredient = False
@@ -228,7 +228,7 @@ class FoodRecommendationManagerTest(TestCase):
 
 
 class FoodRecommendationTest(TestCase):
-    fixtures = ['data.json']
+    fixtures = ['_data.json']
 
     def setUp(self):
         self.food_recommendation = FoodRecommendation.objects.get(name='omelet')
