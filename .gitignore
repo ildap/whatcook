@@ -2,3 +2,6 @@
 /venv/
 /.idea/
 /static/
+/.env.dev
+/.env.prod
+/.env.prod.db
