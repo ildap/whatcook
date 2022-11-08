@@ -8,8 +8,8 @@ from rest_framework.test import APIRequestFactory
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
-from home.views import FoodViewSet, FoodRecommendationListView
-from home.models import Food, Ingredient, FoodRecommendation
+from .views import FoodViewSet, FoodRecommendationListView
+from .models import Food, Ingredient, FoodRecommendation
 
 
 class ModelViewSetTestMixin:

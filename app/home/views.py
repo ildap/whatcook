@@ -1,14 +1,14 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.generics import ListAPIView
 
-from home.permissions import DjangoObjectPermissionsOrAnonReadOnly, assign_object_perms
-from home.models import (
+from .permissions import DjangoObjectPermissionsOrAnonReadOnly, assign_object_perms
+from .models import (
     Food,
     Ingredient,
     IngredientWeight,
     FoodRecommendation
 )
-from home.serializers import (
+from .serializers import (
     FoodSerializer,
     IngredientSerializer,
     IngredientWeightSerializer,
