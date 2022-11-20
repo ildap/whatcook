@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.db.models import QuerySet, ObjectDoesNotExist
 from django.test import TestCase
 
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
@@ -59,6 +59,7 @@ class ModelViewSetTestMixin:
 
     def test_list(self):
         request = self.factory.get(self.get_url(), format='json')
+        force_authenticate(request, user=self.user)
         response = self.view(request)
         model_count = self.get_queryset().count()
 
@@ -69,7 +70,9 @@ class ModelViewSetTestMixin:
         for testcase in self.validation_testcases():
             data = testcase['no valid data']
             error_codes = testcase['error codes']
+
             request = self.factory.post(self.get_url(), data=data, format='json')
+            force_authenticate(request, user=self.user)
             response = self.view(request)
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -83,6 +86,7 @@ class ModelViewSetTestMixin:
         request = self.factory.post(self.get_url(),
                                     data=self.get_valid_data(),
                                     format='json')
+
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -95,6 +99,7 @@ class ModelViewSetTestMixin:
     def test_retrieve(self):
         obj = self.get_queryset().first()
         request = self.factory.get(self.get_url() + str(obj.pk), format='json')
+        force_authenticate(request, user=self.user)
         response = self.detail_view(request, pk=obj.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -107,8 +112,10 @@ class ModelViewSetTestMixin:
         request = self.factory.put(self.get_url() + str(obj.pk),
                                    data=self.get_valid_data(),
                                    format='json')
+        force_authenticate(request, user=self.user)
         response = self.view(request, pk=obj.pk)
         updated_obj = self.get_queryset().first()
+
         # for comparing without pk
         updated_obj.pk = None
 
@@ -118,6 +125,7 @@ class ModelViewSetTestMixin:
     def test_delete(self):
         obj = self.get_queryset().first()
         request = self.factory.delete(self.get_url() + str(obj.pk), format='json')
+        force_authenticate(request, user=self.user)
         response = self.view(request, pk=obj.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -126,9 +134,9 @@ class ModelViewSetTestMixin:
 
 
 class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
-    fixtures = ['_data.json']
+    fixtures = ['data.json']
 
-    user = User.objects.get(username='GoodUser') # aOwnf2gjOwP9n
+    user = User.objects.get(username='GoodUser')
     anonymous = User.objects.get(username='AnonymousUser')
 
     # Implemented abstract methods
@@ -163,6 +171,7 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
     def test_create_unique(self):
         request = self.factory.post(self.get_url(),
                                     data={'name': 'carbonara'}, format='json')
+        force_authenticate(request, user=self.user)
         response = self.view(request)
 
         self.assertEqual(response.data['name'][0].code, 'unique')
@@ -170,7 +179,7 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
 
 
 class FoodRecommendationListViewTest(TestCase):
-    fixtures = ['_data.json']
+    fixtures = ['data.json']
 
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -192,7 +201,7 @@ class FoodRecommendationListViewTest(TestCase):
 
 
 class FoodRecommendationManagerTest(TestCase):
-    fixtures = ['_data.json']
+    fixtures = ['data.json']
 
     def assertContainIngredients(self, available_ingredients, need_ingredients):
         contain_ingredient = False
@@ -228,7 +237,7 @@ class FoodRecommendationManagerTest(TestCase):
 
 
 class FoodRecommendationTest(TestCase):
-    fixtures = ['_data.json']
+    fixtures = ['data.json']
 
     def setUp(self):
         self.food_recommendation = FoodRecommendation.objects.get(name='omelet')
@@ -246,4 +255,3 @@ class FoodRecommendationTest(TestCase):
 
         self.assertEqual(len(absent_ingredients), 1)
         self.assertEqual(absent_ingredients[0].pk, self.absent_pk)
-

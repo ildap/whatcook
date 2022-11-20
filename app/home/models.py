@@ -1,6 +1,6 @@
-from django.db import models
+from django.db import models, connection
 from django.db.models import Q, Count, F
-from django.contrib.auth.models import User
+from django.db.models.expressions import Value
 
 
 class Ingredient(models.Model):
@@ -29,15 +29,21 @@ class FoodRecommendationManager(models.Manager):
 
     def filter_by_ingredients(self, ingredients: [Ingredient]):
         ingredient_in = Q(ingredientweight__ingredient__in=ingredients)
-        ingredients_count = Count('ingredientweight', filter=ingredient_in)
 
         absent_ids = models.Aggregate(F('ingredientweight__ingredient_id'),
                                       function='GROUP_CONCAT', filter=~ingredient_in)
 
+        if connection.vendor == 'postgresql':
+            absent_array = models.Aggregate(F('ingredientweight__ingredient_id'),
+                                            function='array_agg', filter=~ingredient_in)
+
+            absent_ids = models.Func(absent_array, Value(','), function='array_to_string',
+                                     output_field=models.TextField())
+
         return (self.get_queryset()
-                .annotate(ingredients_count=ingredients_count)
-                .annotate(ingredients_total=Count('ingredientweight'))
-                .annotate(absent=absent_ids)
+                .annotate(ingredients_count=Count('ingredientweight', filter=ingredient_in),
+                          ingredients_total=Count('ingredientweight'),
+                          absent=absent_ids)
                 .filter(ingredients_count__gt=0)
                 .order_by('-ingredients_count', 'ingredients_total'))
 
