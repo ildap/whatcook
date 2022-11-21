@@ -86,7 +86,7 @@ class ModelViewSetTestMixin:
         request = self.factory.post(self.get_url(),
                                     data=self.get_valid_data(),
                                     format='json')
-
+        force_authenticate(request, user=self.user)
         response = self.view(request)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
