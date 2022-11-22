@@ -6,8 +6,8 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
-from .views import FoodViewSet, FoodRecommendationListView
-from .models import Food, Ingredient, FoodRecommendation
+from .views import FoodViewSet, FoodRecommendationListView, IngredientViewSet, IngredientWeightViewSet
+from .models import Food, Ingredient, FoodRecommendation, IngredientWeight
 
 
 class ModelViewSetTestMixin:
@@ -120,6 +120,10 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
     _blank_string = ''
     validation_testcases = [
         {
+            'no valid data': {},
+            'error codes': {'name': 'required'}
+        },
+        {
             'no valid data': {'name': _blank_string, 'description': _long_string},
             'error codes': {'name': 'blank', 'description': 'max_length'}
         }
@@ -139,6 +143,64 @@ class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
 
         self.assertEqual(response.data['name'][0].code, 'unique')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class IngredientViewSetTest(ModelViewSetTestMixin, TestCase):
+    fixtures = ['data.json']
+    view_set_class = IngredientViewSet
+    queryset = Ingredient.objects.get_queryset()
+    user = User.objects.get(username='GoodUser')
+    url = "/ingredients/"
+
+    _long_string = 'L' * 256
+    _blank_string = ''
+    validation_testcases = [
+        {
+            'no valid data': {},
+            'error codes': {'name': 'required'}
+        },
+        {
+            'no valid data': {'name': _blank_string},
+            'error codes': {'name': 'blank'}
+        },
+        {
+            'no valid data': {'name': _long_string},
+            'error codes': {'name': 'max_length'}
+        }
+    ]
+    valid_data = {'name': "mango", 'calories': 1}
+
+    def is_correct_serialize(self, model_object, serialize_data) -> bool:
+        return model_object.pk == serialize_data.get('pk') and \
+               model_object.name == serialize_data.get('name') and \
+               model_object.calories == serialize_data.get('calories')
+
+
+class IngredientWeightViewSetTest(ModelViewSetTestMixin, TestCase):
+    fixtures = ['data.json']
+    view_set_class = IngredientWeightViewSet
+    queryset = IngredientWeight.objects.get_queryset()
+    user = User.objects.get(username='GoodUser')
+    url = "/ingredient_weights/"
+
+    validation_testcases = [
+        {
+            'no valid data': {},
+            'error codes': {'food': 'required', 'ingredient': 'required', 'weight': 'required'}
+        },
+        {
+            'no valid data': {'food': 99, 'ingredient': 99, 'weight': 'invalid'},
+            'error codes': {'food': 'does_not_exist', 'ingredient': 'does_not_exist', 'weight': 'invalid'}
+        },
+
+    ]
+    valid_data = {'food': 4, 'ingredient': 5, 'weight': 10}
+
+    def is_correct_serialize(self, model_object, serialize_data) -> bool:
+        return model_object.pk == serialize_data.get('pk') and \
+               model_object.food_id == serialize_data.get('food') and \
+               model_object.weight == serialize_data.get('weight') and \
+               model_object.ingredient_id == serialize_data.get('ingredient')
 
 
 class FoodRecommendationListViewTest(TestCase):
