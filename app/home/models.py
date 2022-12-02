@@ -10,6 +10,9 @@ class Ingredient(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['-id']
+
 
 class Food(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -18,25 +21,29 @@ class Food(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['-id']
+
 
 class IngredientWeight(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     weight = models.FloatField()
 
+    class Meta:
+        ordering = ['-id']
+
 
 class FoodRecommendationManager(models.Manager):
 
     def filter_by_ingredients(self, ingredients: [Ingredient]):
         ingredient_in = Q(ingredientweight__ingredient__in=ingredients)
-
         absent_ids = models.Aggregate(F('ingredientweight__ingredient_id'),
                                       function='GROUP_CONCAT', filter=~ingredient_in)
 
         if connection.vendor == 'postgresql':
             absent_array = models.Aggregate(F('ingredientweight__ingredient_id'),
                                             function='array_agg', filter=~ingredient_in)
-
             absent_ids = models.Func(absent_array, Value(','), function='array_to_string',
                                      output_field=models.TextField())
 
