@@ -1,5 +1,3 @@
-from abc import ABCMeta, abstractmethod
-
 from django.contrib.auth.models import User
 from django.db.models import QuerySet, ObjectDoesNotExist
 from django.test import TestCase
@@ -8,70 +6,48 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 
-from .views import FoodViewSet, FoodRecommendationListView
-from .models import Food, Ingredient, FoodRecommendation
+from .views import FoodViewSet, FoodRecommendationListView, IngredientViewSet, IngredientWeightViewSet
+from .models import Food, Ingredient, FoodRecommendation, IngredientWeight
 
 
 class ModelViewSetTestMixin:
-    """
-    Mixin class for testing 'crud' methods from ModelViewSet subclasses
-    """
-    __metaclass__ = ABCMeta
+    """Mixin class for testing 'crud' methods from ModelViewSet subclasses"""
+    view_set_class: ModelViewSet.__class__
+    queryset: QuerySet
+    user: User
+    url = ""
+
+    # Contain list of test cases with no valid data and relevant error.
+    # [
+    #    {
+    #        'no valid data': {'field name1': 'value', 'field name2': ''},
+    #        'error codes':   {'field name2': 'blank'}
+    #    },
+    # ]
+    validation_testcases = []
+    valid_data = {}
 
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.detail_view = self.get_viewset_class().as_view({'get': 'retrieve'})
-        self.view = self.get_viewset_class().as_view({'get': 'list', 'post': 'create',
-                                                      'put': 'update', 'delete': 'destroy'})
-
-    @abstractmethod
-    def get_queryset(self) -> QuerySet:
-        pass
-
-    @abstractmethod
-    def get_url(self) -> str:
-        pass
-
-    @abstractmethod
-    def get_viewset_class(self) -> ModelViewSet.__class__:
-        pass
-
-    @abstractmethod
-    def validation_testcases(self) -> list:
-        """
-        Return list of test cases with no valid data and relevant error.
-
-        return [
-            {
-                'no valid data': {'field name1': 'value', 'field name2': ''},
-                'error codes':   {'field name2': 'blank'}
-            },
-        ]
-        """
-
-    @abstractmethod
-    def get_valid_data(self) -> dict:
-        pass
-
-    @abstractmethod
-    def is_correct_serialize(self, model_object, serialize_data) -> bool:
-        pass
+        self.detail_view = self.view_set_class.as_view({'get': 'retrieve'})
+        self.view = self.view_set_class.as_view({'get': 'list', 'post': 'create',
+                                                 'put': 'update', 'delete': 'destroy'})
 
     def test_list(self):
-        request = self.factory.get(self.get_url(), format='json')
+        request = self.factory.get(self.url, format='json')
         force_authenticate(request, user=self.user)
         response = self.view(request)
-        model_count = self.get_queryset().count()
+        model_count = self.queryset.count()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], model_count)
 
     def test_create_no_valid(self):
-        for testcase in self.validation_testcases():
+        for testcase in self.validation_testcases:
             data = testcase['no valid data']
             error_codes = testcase['error codes']
 
-            request = self.factory.post(self.get_url(), data=data, format='json')
+            request = self.factory.post(self.url, data=data, format='json')
             force_authenticate(request, user=self.user)
             response = self.view(request)
 
@@ -83,8 +59,8 @@ class ModelViewSetTestMixin:
                 self.assertEqual(first_code, second_code)
 
     def test_create_valid(self):
-        request = self.factory.post(self.get_url(),
-                                    data=self.get_valid_data(),
+        request = self.factory.post(self.url,
+                                    data=self.valid_data,
                                     format='json')
         force_authenticate(request, user=self.user)
         response = self.view(request)
@@ -92,13 +68,13 @@ class ModelViewSetTestMixin:
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         try:
-            self.get_queryset().get(pk=response.data['pk'])
+            self.queryset.get(pk=response.data['pk'])
         except ObjectDoesNotExist:
             self.fail("object not created")
 
     def test_retrieve(self):
-        obj = self.get_queryset().first()
-        request = self.factory.get(self.get_url() + str(obj.pk), format='json')
+        obj = self.queryset.first()
+        request = self.factory.get(self.url + str(obj.pk), format='json')
         force_authenticate(request, user=self.user)
         response = self.detail_view(request, pk=obj.pk)
 
@@ -108,13 +84,13 @@ class ModelViewSetTestMixin:
             self.fail("no correct serialization")
 
     def test_update(self):
-        obj = self.get_queryset().first()
-        request = self.factory.put(self.get_url() + str(obj.pk),
-                                   data=self.get_valid_data(),
+        obj = self.queryset.first()
+        request = self.factory.put(self.url + str(obj.pk),
+                                   data=self.valid_data,
                                    format='json')
         force_authenticate(request, user=self.user)
         response = self.view(request, pk=obj.pk)
-        updated_obj = self.get_queryset().first()
+        updated_obj = self.queryset.first()
 
         # for comparing without pk
         updated_obj.pk = None
@@ -123,59 +99,108 @@ class ModelViewSetTestMixin:
         self.assertNotEqual(updated_obj, obj)
 
     def test_delete(self):
-        obj = self.get_queryset().first()
-        request = self.factory.delete(self.get_url() + str(obj.pk), format='json')
+        obj = self.queryset.first()
+        request = self.factory.delete(self.url + str(obj.pk), format='json')
         force_authenticate(request, user=self.user)
         response = self.view(request, pk=obj.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         with self.assertRaises(ObjectDoesNotExist):
-            self.get_queryset().get(pk=obj.pk)
+            self.queryset.get(pk=obj.pk)
 
 
 class FoodViewSetTest(ModelViewSetTestMixin, TestCase):
     fixtures = ['data.json']
-
+    view_set_class = FoodViewSet
+    queryset = Food.objects.get_queryset()
     user = User.objects.get(username='GoodUser')
-    anonymous = User.objects.get(username='AnonymousUser')
+    url = "/foods/"
 
-    # Implemented abstract methods
-    def get_viewset_class(self) -> ModelViewSet.__class__:
-        return FoodViewSet
-
-    def get_url(self):
-        return "/foods/"
-
-    def get_queryset(self) -> QuerySet:
-        return Food.objects.get_queryset()
-
-    def validation_testcases(self):
-        long_string = 'L' * 256
-        blank_string = ''
-        return [
-            {
-                'no valid data': {'name': blank_string, 'description': long_string},
-                'error codes': {'name': 'blank', 'description': 'max_length'}
-            }
-        ]
-
-    def get_valid_data(self) -> dict:
-        return {'name': 'pizza'}
+    _long_string = 'L' * 256
+    _blank_string = ''
+    validation_testcases = [
+        {
+            'no valid data': {},
+            'error codes': {'name': 'required'}
+        },
+        {
+            'no valid data': {'name': _blank_string, 'description': _long_string},
+            'error codes': {'name': 'blank', 'description': 'max_length'}
+        }
+    ]
+    valid_data = {'name': 'pizza'}
 
     def is_correct_serialize(self, model_object, serialize_data) -> bool:
         return model_object.pk == serialize_data.get('pk') and \
                model_object.name == serialize_data.get('name') and \
                model_object.description == serialize_data.get('description')
 
-    # Test cases
     def test_create_unique(self):
-        request = self.factory.post(self.get_url(),
+        request = self.factory.post(self.url,
                                     data={'name': 'carbonara'}, format='json')
         force_authenticate(request, user=self.user)
         response = self.view(request)
 
         self.assertEqual(response.data['name'][0].code, 'unique')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class IngredientViewSetTest(ModelViewSetTestMixin, TestCase):
+    fixtures = ['data.json']
+    view_set_class = IngredientViewSet
+    queryset = Ingredient.objects.get_queryset()
+    user = User.objects.get(username='GoodUser')
+    url = "/ingredients/"
+
+    _long_string = 'L' * 256
+    _blank_string = ''
+    validation_testcases = [
+        {
+            'no valid data': {},
+            'error codes': {'name': 'required'}
+        },
+        {
+            'no valid data': {'name': _blank_string},
+            'error codes': {'name': 'blank'}
+        },
+        {
+            'no valid data': {'name': _long_string},
+            'error codes': {'name': 'max_length'}
+        }
+    ]
+    valid_data = {'name': "mango", 'calories': 1}
+
+    def is_correct_serialize(self, model_object, serialize_data) -> bool:
+        return model_object.pk == serialize_data.get('pk') and \
+               model_object.name == serialize_data.get('name') and \
+               model_object.calories == serialize_data.get('calories')
+
+
+class IngredientWeightViewSetTest(ModelViewSetTestMixin, TestCase):
+    fixtures = ['data.json']
+    view_set_class = IngredientWeightViewSet
+    queryset = IngredientWeight.objects.get_queryset()
+    user = User.objects.get(username='GoodUser')
+    url = "/ingredient_weights/"
+
+    validation_testcases = [
+        {
+            'no valid data': {},
+            'error codes': {'food': 'required', 'ingredient': 'required', 'weight': 'required'}
+        },
+        {
+            'no valid data': {'food': 99, 'ingredient': 99, 'weight': 'invalid'},
+            'error codes': {'food': 'does_not_exist', 'ingredient': 'does_not_exist', 'weight': 'invalid'}
+        },
+
+    ]
+    valid_data = {'food': 4, 'ingredient': 5, 'weight': 10}
+
+    def is_correct_serialize(self, model_object, serialize_data) -> bool:
+        return model_object.pk == serialize_data.get('pk') and \
+               model_object.food_id == serialize_data.get('food') and \
+               model_object.weight == serialize_data.get('weight') and \
+               model_object.ingredient_id == serialize_data.get('ingredient')
 
 
 class FoodRecommendationListViewTest(TestCase):
