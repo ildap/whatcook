@@ -1,6 +1,10 @@
-from django.db import models, connection
-from django.db.models import Q, Count, F
+from django.db import models
 from django.db.models.expressions import Value
+
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField, SearchVector
+
+from home import managers
 
 
 class Ingredient(models.Model):
@@ -17,12 +21,23 @@ class Ingredient(models.Model):
 class Food(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True)
+    ingredients = models.ManyToManyField(Ingredient, through="IngredientWeight")
+    _ingredients_vector = SearchVectorField()
+
+    objects = managers.FoodManager()
 
     def __str__(self):
         return self.name
 
+    def _update_vector(self):
+        ingredients_str = " ".join(self.ingredients.values_list("name", flat=True))
+        self._ingredients_vector = SearchVector(Value(f"'{ingredients_str}'"))
+
     class Meta:
         ordering = ['-id']
+        indexes = [
+            GinIndex(fields=["_ingredients_vector"]),
+        ]
 
 
 class IngredientWeight(models.Model):
@@ -32,45 +47,3 @@ class IngredientWeight(models.Model):
 
     class Meta:
         ordering = ['-id']
-
-
-class FoodRecommendationManager(models.Manager):
-
-    def filter_by_ingredients(self, ingredients: [Ingredient]):
-        ingredient_in = Q(ingredientweight__ingredient__in=ingredients)
-        absent_ids = models.Aggregate(F('ingredientweight__ingredient_id'),
-                                      function='GROUP_CONCAT', filter=~ingredient_in)
-
-        if connection.vendor == 'postgresql':
-            absent_array = models.Aggregate(F('ingredientweight__ingredient_id'),
-                                            function='array_agg', filter=~ingredient_in)
-            absent_ids = models.Func(absent_array, Value(','), function='array_to_string',
-                                     output_field=models.TextField())
-
-        return (self.get_queryset()
-                .annotate(ingredients_count=Count('ingredientweight', filter=ingredient_in),
-                          ingredients_total=Count('ingredientweight'),
-                          absent=absent_ids)
-                .filter(ingredients_count__gt=0)
-                .order_by('-ingredients_count', 'ingredients_total'))
-
-
-class FoodRecommendation(Food):
-    objects = FoodRecommendationManager()
-
-    class Meta:
-        proxy = True
-
-    @property
-    def has_ingredients(self):
-        return [iw.ingredient for iw in self.ingredientweight_set.exclude(pk__in=self._absent_ids())]
-
-    @property
-    def absent_ingredients(self):
-        return Ingredient.objects.filter(pk__in=self._absent_ids()).all()
-
-    def _absent_ids(self):
-        if hasattr(self, 'absent') and isinstance(self.absent, str):
-            return self.absent.split(',')
-
-        return []
