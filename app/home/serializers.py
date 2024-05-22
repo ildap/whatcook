@@ -4,30 +4,29 @@ from .models import (
     Food,
     Ingredient,
     IngredientWeight,
-    FoodRecommendation
 )
 
 
 class FoodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Food
-        depth = 2
-        fields = ['pk', 'name', 'description', 'ingredientweight_set']
+        depth = 1
+        fields = ['pk', 'name', 'description', 'ingredients']
 
 
-class FoodRecommendationSerializer(serializers.ModelSerializer):
-    has_ingredients = serializers.SerializerMethodField()
-    absent_ingredients = serializers.SerializerMethodField()
+class FoodRecommendationSerializer(FoodSerializer):
+    ingredients = serializers.SerializerMethodField()
 
-    def get_has_ingredients(self, food_recommendation):
-        return IngredientSerializer(food_recommendation.has_ingredients, many=True).data
+    def get_ingredients(self, food):
+        ingredients = self.context['request'].GET.getlist('ingredient')
+        data = IngredientSerializer(food.ingredients, many=True).data
+        for i in data:
+            if i['name'] in ingredients:
+                i['absent'] = False
+            else:
+                i['absent'] =True
 
-    def get_absent_ingredients(self, food_recommendation):
-        return IngredientSerializer(food_recommendation.absent_ingredients, many=True).data
-
-    class Meta:
-        model = FoodRecommendation
-        fields = ['pk', 'name', 'description', 'has_ingredients', 'absent_ingredients']
+        return data
 
 
 class IngredientSerializer(serializers.ModelSerializer):
