@@ -19,11 +19,26 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - POSTGRES_USER=what_cook
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=what_cook_dev
+        POSTGRES_USER: ${SQL_USER:-what_cook}
+        POSTGRES_PASSWORD: ${SQL_PASSWORD:-secret}
+        POSTGRES_DB: ${SQL_DATABASE:-what_cook_dev}
     ports:
       - "5432:5432"
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-secret}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "3000:80"
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
+  pgadmin:
