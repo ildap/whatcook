@@ -1,13 +1,10 @@
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import ListAPIView
 
-
-from .permissions import DjangoObjectPermissionsOrAnonReadOnly, assign_object_perms
+from .permissions import PermissionsMixin
 from .models import (
     Food,
     Ingredient,
-    IngredientWeight,
-    FoodRecommendation
+    IngredientWeight
 )
 from .serializers import (
     FoodSerializer,
@@ -16,15 +13,8 @@ from .serializers import (
     FoodRecommendationSerializer
 )
 
+
 # TODO: swagger
-class Permissions:
-    permission_classes = [DjangoObjectPermissionsOrAnonReadOnly]
-
-    def perform_create(self, serializer):
-        obj = serializer.save()
-        assign_object_perms(self.request.user, obj)
-
-
 class FoodViewSet(ModelViewSet):
     queryset = Food.objects.all()
     serializer_class = FoodSerializer
@@ -34,24 +24,17 @@ class FoodViewSet(ModelViewSet):
 
         if ingredients := self.request.GET.getlist('ingredient'):
             queryset = queryset.search(ingredients)
+            self.serializer_class = FoodRecommendationSerializer
+            self.get_serializer_context()
 
         return queryset
 
 
-class FoodRecommendationListView(ListAPIView):
-    serializer_class = FoodRecommendationSerializer
-
-    def get_queryset(self):
-        ingredients_pk = self.kwargs['ingredients'].split(',')
-        ingredients = Ingredient.objects.filter(pk__in=ingredients_pk)
-        return FoodRecommendation.objects.filter_by_ingredients(ingredients)
-
-
-class IngredientViewSet(ModelViewSet, Permissions):
+class IngredientViewSet(ModelViewSet, PermissionsMixin):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
 
 
-class IngredientWeightViewSet(ModelViewSet, Permissions):
+class IngredientWeightViewSet(ModelViewSet, PermissionsMixin):
     queryset = IngredientWeight.objects.all()
     serializer_class = IngredientWeightSerializer
