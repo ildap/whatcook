@@ -6,7 +6,6 @@ from .views import (
     FoodViewSet,
     IngredientViewSet,
     IngredientWeightViewSet,
-    FoodRecommendationListView
 )
 
 router = DefaultRouter()
@@ -18,5 +17,4 @@ app_name = 'home'
 
 urlpatterns = [
     path(r'', include(router.urls)),
-    re_path('^recommendation/(?P<ingredients>[\d,]+)/$', FoodRecommendationListView.as_view()),
 ]
