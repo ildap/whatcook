@@ -43,7 +43,7 @@ class Food(models.Model):
 class IngredientWeight(models.Model):
     food = models.ForeignKey(Food, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    weight = models.FloatField()
+    weight = models.FloatField(default=0)
 
     class Meta:
         ordering = ['-id']

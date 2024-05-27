@@ -8,4 +8,4 @@ class FoodQuerySet(models.QuerySet):
 
 class FoodManager(models.Manager):
     def get_queryset(self):
-        return FoodQuerySet(self.model, using=self._db)
+        return FoodQuerySet(self.model)
