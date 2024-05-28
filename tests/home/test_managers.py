@@ -6,7 +6,7 @@ from home.managers import FoodManager, FoodQuerySet
 from home.models import Food
 
 
-class FoodManagerTest(TestCase):
+class FoodManagerTestCase(TestCase):
 
     def setUp(self):
         self.foodManager = Food.objects
@@ -18,7 +18,7 @@ class FoodManagerTest(TestCase):
         self.assertEqual(querySet.model, Food)
 
 
-class FoodQuerySetTest(TestCase):
+class FoodQuerySetTestCase(TestCase):
 
     def setUp(self):
         self.queryset = Food.objects.get_queryset()

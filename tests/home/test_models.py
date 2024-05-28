@@ -5,7 +5,7 @@ from django.contrib.postgres.search import SearchVector
 from home.models import Food, IngredientWeight, Ingredient
 
 
-class TestFood(TestCase):
+class FoodTestCase(TestCase):
 
     def setUp(self):
         self.food = Food.objects.create(name='test_food')
