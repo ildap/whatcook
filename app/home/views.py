@@ -14,8 +14,7 @@ from .serializers import (
 )
 
 
-# TODO: swagger
-class FoodViewSet(ModelViewSet):
+class FoodViewSet(PermissionsMixin, ModelViewSet):
     queryset = Food.objects.all()
     serializer_class = FoodSerializer
 
@@ -25,16 +24,15 @@ class FoodViewSet(ModelViewSet):
         if ingredients := self.request.GET.getlist('ingredient'):
             queryset = queryset.search(ingredients)
             self.serializer_class = FoodRecommendationSerializer
-            self.get_serializer_context()
 
         return queryset
 
 
-class IngredientViewSet(ModelViewSet, PermissionsMixin):
+class IngredientViewSet(PermissionsMixin, ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
 
 
-class IngredientWeightViewSet(ModelViewSet, PermissionsMixin):
+class IngredientWeightViewSet(PermissionsMixin, ModelViewSet):
     queryset = IngredientWeight.objects.all()
     serializer_class = IngredientWeightSerializer
