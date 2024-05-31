@@ -13,8 +13,6 @@ router.register(r'foods', FoodViewSet)
 router.register(r'ingredients', IngredientViewSet)
 router.register(r'ingredient_weights', IngredientWeightViewSet)
 
-app_name = 'home'
-
 urlpatterns = [
     path(r'', include(router.urls)),
 ]

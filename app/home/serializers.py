@@ -7,11 +7,11 @@ from .models import (
 )
 
 
-class FoodSerializer(serializers.ModelSerializer):
+class FoodSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Food
         depth = 1
-        fields = ['pk', 'name', 'description', 'ingredients']
+        fields = ['id', 'name', 'description', 'ingredients', 'url']
 
 
 class FoodRecommendationSerializer(FoodSerializer):
@@ -24,18 +24,18 @@ class FoodRecommendationSerializer(FoodSerializer):
             if i['name'] in ingredients:
                 i['absent'] = False
             else:
-                i['absent'] =True
+                i['absent'] = True
 
         return data
 
 
-class IngredientSerializer(serializers.ModelSerializer):
+class IngredientSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ['pk', 'name', 'calories']
+        fields = ['id', 'name', 'calories', 'url']
 
 
-class IngredientWeightSerializer(serializers.ModelSerializer):
+class IngredientWeightSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = IngredientWeight
-        fields = ['pk', 'food', 'ingredient', 'weight']
+        fields = ['id', 'food', 'ingredient', 'weight', 'url']
